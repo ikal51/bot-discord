@@ -1,14 +1,12 @@
-// ==================== DISCORD VOICE BOT ====================
-process.on("unhandledRejection", (err) => console.error("[Unhandled Rejection]", err));
-process.on("uncaughtException", (err) => console.error("[Uncaught Exception]", err));
+process.on("unhandledRejection", (err) => console.error("[Unhandled]", err));
+process.on("uncaughtException", (err) => console.error("[Uncaught]", err));
 
 const { Client, GatewayIntentBits } = require("discord.js");
 const {
     joinVoiceChannel,
     createAudioPlayer,
     createAudioResource,
-    AudioPlayerStatus,
-    VoiceConnectionStatus
+    AudioPlayerStatus
 } = require("@discordjs/voice");
 
 const cron = require("node-cron");
@@ -27,24 +25,21 @@ const client = new Client({
 client.once("ready", () => {
     console.log(`✅ BOT BERHASIL LOGIN sebagai ${client.user.tag}`);
 
-    // === CRON SCHEDULE ===
-    // Saat ini test setiap 1 menit → nanti ubah sesuai kebutuhan
-    cron.schedule("*/1 * * * *", async () => {
-        console.log(`⏰ [${new Date().toLocaleString('id-ID')}] Cron berjalan`);
+    cron.schedule("*/1 * * * *", async () => {   // Test setiap 1 menit
+        console.log(`⏰ Cron berjalan [${new Date().toLocaleString('id-ID')}]`);
 
         try {
             const guild = client.guilds.cache.get("1492442606410530918");
-            if (!guild) return console.log("❌ Guild tidak ditemukan");
+            const channel = guild?.channels.cache.get("1500136991222792312");
 
-            const channel = guild.channels.cache.get("1500136991222792312");
-            if (!channel) return console.log("❌ Voice channel tidak ditemukan");
+            if (!guild || !channel) {
+                return console.log("❌ Guild atau Channel tidak ditemukan");
+            }
 
-            // Cegah multiple join
             if (guild.members.me?.voice.channel) {
                 return console.log("⚠️ Bot sudah di voice channel");
             }
 
-            // Join VC
             const connection = joinVoiceChannel({
                 channelId: channel.id,
                 guildId: guild.id,
@@ -54,12 +49,20 @@ client.once("ready", () => {
             console.log(`✅ Berhasil join ke: ${channel.name}`);
 
             const player = createAudioPlayer();
-            const resource = createAudioResource(path.join(__dirname, "lagu.mp3"));
+
+            const audioPath = path.join(__dirname, "lagu.mp3");
+            const resource = createAudioResource(audioPath, {
+                inlineVolume: true
+            });
 
             connection.subscribe(player);
             player.play(resource);
 
             console.log("🎵 Sedang memutar lagu...");
+
+            player.on(AudioPlayerStatus.Playing, () => {
+                console.log("▶️ Audio sedang diputar!");
+            });
 
             player.on(AudioPlayerStatus.Idle, () => {
                 console.log("✅ Lagu selesai, disconnect...");
@@ -74,15 +77,10 @@ client.once("ready", () => {
         } catch (err) {
             console.error("❌ Error di cron:", err);
         }
-    }, {
-        timezone: "Asia/Jakarta"
+    }, { 
+        timezone: "Asia/Jakarta" 
     });
 });
 
-// Login Bot
 client.login(process.env.TOKEN_BOT)
-    .then(() => console.log("🔑 Proses login berhasil dimulai..."))
-    .catch(err => {
-        console.error("❌ LOGIN GAGAL:", err.message);
-        console.error("⚠️ Pastikan TOKEN_BOT sudah diatur di Railway Environment Variables");
-    });
+    .catch(err => console.error("❌ Login Error:", err.message));
