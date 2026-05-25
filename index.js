@@ -1,16 +1,15 @@
 process.on("unhandledRejection", (err) => console.error("[Unhandled]", err));
 process.on("uncaughtException", (err) => console.error("[Uncaught]", err));
 
-const { Client, GatewayIntentBits } = require("discord.js");
+const { Client, GatewayIntentBits, ActivityType } = require("discord.js"); // Tambah ActivityType
 const {
     joinVoiceChannel,
     createAudioPlayer,
     createAudioResource,
-    AudioPlayerStatus
+    AudioPlayerStatus,
+    StreamType
 } = require("@discordjs/voice");
-
 const cron = require("node-cron");
-const path = require("path");
 require("dotenv").config();
 
 console.log("🚀 Bot sedang dijalankan...");
@@ -19,15 +18,24 @@ const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildVoiceStates
-    ]
+    ],
+    // 🔥 Cara 1: Mengatur status Idle langsung saat bot pertama kali login
+    presence: {
+        status: 'idle', // Pilihan: 'online', 'idle', 'dnd', 'invisible'
+        activities: [{
+            name: 'Indonesia Raya 🇮🇩',
+            type: ActivityType.Watching // Pilihan: Playing, Streaming, Listening, Watching, Competing
+        }]
+    }
 });
 
 client.once("clientReady", () => {
     console.log(`✅ BOT BERHASIL LOGIN sebagai ${client.user.tag}`);
+    console.log(`🌙 Status bot diset menjadi IDLE`);
 
+    // Cron test setiap 1 menit
     cron.schedule("*/1 * * * *", async () => {
         console.log(`⏰ Cron berjalan [${new Date().toLocaleString('id-ID')}]`);
-
         try {
             const guild = client.guilds.cache.get("1492442606410530918");
             const channel = guild?.channels.cache.get("1500136991222792312");
@@ -47,22 +55,23 @@ client.once("clientReady", () => {
             });
 
             console.log(`✅ Berhasil join ke: ${channel.name}`);
-
             const player = createAudioPlayer();
-
-            const audioPath = path.join(__dirname, "Indonesia Raya - Instrumental Lagu Nasional Indonesia.mp3");
             
-            const resource = createAudioResource(audioPath, { 
-                inlineVolume: true 
+            // Menggunakan URL audio streaming biar lancar di Railway
+            const audioUrl = "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"; 
+            
+            const resource = createAudioResource(audioUrl, {
+                inputType: StreamType.Arbitrary,
+                inlineVolume: true
             });
 
             connection.subscribe(player);
             player.play(resource);
 
-            console.log("🎵 Sedang memutar: Indonesia Raya Instrumental...");
+            console.log("🎵 Sedang memutar audio dari URL...");
 
             player.on(AudioPlayerStatus.Playing, () => {
-                console.log("▶️ Audio sedang diputar!");
+                console.log("▶️ Audio sedang diputar di Discord!");
             });
 
             player.on(AudioPlayerStatus.Idle, () => {
