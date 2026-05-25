@@ -22,10 +22,12 @@ const client = new Client({
     ]
 });
 
-client.once("ready", () => {
+// Pakai clientReady (fix deprecation)
+client.once("clientReady", () => {
     console.log(`✅ BOT BERHASIL LOGIN sebagai ${client.user.tag}`);
 
-    cron.schedule("*/1 * * * *", async () => {   // Test setiap 1 menit
+    // Cron test setiap 1 menit
+    cron.schedule("*/1 * * * *", async () => {
         console.log(`⏰ Cron berjalan [${new Date().toLocaleString('id-ID')}]`);
 
         try {
@@ -49,11 +51,9 @@ client.once("ready", () => {
             console.log(`✅ Berhasil join ke: ${channel.name}`);
 
             const player = createAudioPlayer();
-
             const audioPath = path.join(__dirname, "lagu.mp3");
-            const resource = createAudioResource(audioPath, {
-                inlineVolume: true
-            });
+            
+            const resource = createAudioResource(audioPath, { inlineVolume: true });
 
             connection.subscribe(player);
             player.play(resource);
