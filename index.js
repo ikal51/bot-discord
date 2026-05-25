@@ -1,90 +1,88 @@
-process.on("unhandledRejection", console.error);
-process.on("uncaughtException", console.error);
+// ==================== DISCORD VOICE BOT ====================
+process.on("unhandledRejection", (err) => console.error("[Unhandled Rejection]", err));
+process.on("uncaughtException", (err) => console.error("[Uncaught Exception]", err));
 
+const { Client, GatewayIntentBits } = require("discord.js");
 const {
-  Client,
-  GatewayIntentBits
-} = require("discord.js");
-
-const {
-  joinVoiceChannel,
-  createAudioPlayer,
-  createAudioResource,
-  AudioPlayerStatus
+    joinVoiceChannel,
+    createAudioPlayer,
+    createAudioResource,
+    AudioPlayerStatus,
+    VoiceConnectionStatus
 } = require("@discordjs/voice");
 
 const cron = require("node-cron");
+const path = require("path");
+require("dotenv").config();
+
+console.log("🚀 Bot sedang dijalankan...");
 
 const client = new Client({
-  intents: [GatewayIntentBits.Guilds]
+    intents: [
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildVoiceStates
+    ]
 });
 
 client.once("ready", () => {
-  console.log(`login sebagai ${client.user.tag}`);
+    console.log(`✅ BOT BERHASIL LOGIN sebagai ${client.user.tag}`);
 
-  // TEST: tiap 1 menit
-  // ganti nanti jadi "42 11 * * *" buat jam 11:42 WIB
-  cron.schedule("*/1 * * * *", async () => {
+    // === CRON SCHEDULE ===
+    // Saat ini test setiap 1 menit → nanti ubah sesuai kebutuhan
+    cron.schedule("*/1 * * * *", async () => {
+        console.log(`⏰ [${new Date().toLocaleString('id-ID')}] Cron berjalan`);
 
-    console.log("mulai join vc...");
+        try {
+            const guild = client.guilds.cache.get("1492442606410530918");
+            if (!guild) return console.log("❌ Guild tidak ditemukan");
 
-    try {
+            const channel = guild.channels.cache.get("1500136991222792312");
+            if (!channel) return console.log("❌ Voice channel tidak ditemukan");
 
-      // ID SERVER
-      const guild = client.guilds.cache.get("1492442606410530918");
+            // Cegah multiple join
+            if (guild.members.me?.voice.channel) {
+                return console.log("⚠️ Bot sudah di voice channel");
+            }
 
-      if (!guild) {
-        console.log("guild tidak ditemukan");
-        return;
-      }
+            // Join VC
+            const connection = joinVoiceChannel({
+                channelId: channel.id,
+                guildId: guild.id,
+                adapterCreator: guild.voiceAdapterCreator,
+            });
 
-      // ID VOICE CHANNEL
-      const channel = guild.channels.cache.get("1500136991222792312");
+            console.log(`✅ Berhasil join ke: ${channel.name}`);
 
-      if (!channel) {
-        console.log("voice channel tidak ditemukan");
-        return;
-      }
+            const player = createAudioPlayer();
+            const resource = createAudioResource(path.join(__dirname, "lagu.mp3"));
 
-      // join vc
-      const connection = joinVoiceChannel({
-        channelId: channel.id,
-        guildId: guild.id,
-        adapterCreator: guild.voiceAdapterCreator
-      });
+            connection.subscribe(player);
+            player.play(resource);
 
-      console.log("berhasil join vc");
+            console.log("🎵 Sedang memutar lagu...");
 
-      // audio player
-      const player = createAudioPlayer();
+            player.on(AudioPlayerStatus.Idle, () => {
+                console.log("✅ Lagu selesai, disconnect...");
+                connection.destroy();
+            });
 
-      // file mp3
-      const resource = createAudioResource("./lagu.mp3");
+            player.on("error", (err) => {
+                console.error("❌ Player Error:", err.message);
+                connection.destroy();
+            });
 
-      // play
-      player.play(resource);
-
-      // subscribe
-      connection.subscribe(player);
-
-      console.log("muter lagu...");
-
-      // selesai
-      player.on(AudioPlayerStatus.Idle, () => {
-        console.log("lagu selesai");
-
-        connection.destroy();
-      });
-
-    } catch (err) {
-      console.error(err);
-    }
-
-  }, {
-    timezone: "Asia/Jakarta"
-  });
-
+        } catch (err) {
+            console.error("❌ Error di cron:", err);
+        }
+    }, {
+        timezone: "Asia/Jakarta"
+    });
 });
 
-// LOGIN BOT
-client.login(process.env.MTI5MzUzMjg5NzQxNTkyMTY2NA.GNiIhz.HJ9PYTOI9VZ77YORYZ3tcH-ZRfM05V0NewkfPM);
+// Login Bot
+client.login(process.env.TOKEN_BOT)
+    .then(() => console.log("🔑 Proses login berhasil dimulai..."))
+    .catch(err => {
+        console.error("❌ LOGIN GAGAL:", err.message);
+        console.error("⚠️ Pastikan TOKEN_BOT sudah diatur di Railway Environment Variables");
+    });
