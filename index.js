@@ -25,7 +25,7 @@ const client = new Client({
 client.once("clientReady", () => {
     console.log(`✅ BOT BERHASIL LOGIN sebagai ${client.user.tag}`);
 
-    cron.schedule("*/1 * * * *", async () => {   // Test setiap 1 menit
+    cron.schedule("*/1 * * * *", async () => {
         console.log(`⏰ Cron berjalan [${new Date().toLocaleString('id-ID')}]`);
 
         try {
@@ -50,7 +50,6 @@ client.once("clientReady", () => {
 
             const player = createAudioPlayer();
 
-            // Nama file sesuai dengan milik kamu
             const audioPath = path.join(__dirname, "Indonesia Raya - Instrumental Lagu Nasional Indonesia.mp3");
             
             const resource = createAudioResource(audioPath, { 
@@ -63,7 +62,7 @@ client.once("clientReady", () => {
             console.log("🎵 Sedang memutar: Indonesia Raya Instrumental...");
 
             player.on(AudioPlayerStatus.Playing, () => {
-                console.log("▶️ Audio sedang diputar! (semoga kedengeran)");
+                console.log("▶️ Audio sedang diputar!");
             });
 
             player.on(AudioPlayerStatus.Idle, () => {
