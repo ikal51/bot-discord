@@ -1,0 +1,11 @@
+{
+  "build": {
+    "builder": "NIXPACKS",
+    "pkgs": [
+      "ffmpeg"
+    ]
+  },
+  "deploy": {
+    "startCommand": "node index.js"
+  }
+}
